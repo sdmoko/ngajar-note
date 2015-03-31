@@ -1,0 +1,427 @@
+Title : Lokan VyOS fundamental
+Date  : 28 Feb - 1 Mar 2015
+
+===Konfigurasi Vbox===
+Network Mode
+R1
+Adapter 1 : 
+mode bridge
+Adapeter 2
+mode internal network
+adapter 
+
+
+=== Instal VyOS ===
+
+vyos@vyos:~$ install image 
+Welcome to the VyOS install program.  This script
+will walk you through the process of installing the
+VyOS image to a local hard drive.
+Would you like to continue? (Yes/No) [Yes]: [return]
+Probing drives: OK
+Looking for pre-existing RAID groups...none found.
+The VyOS image will require a minimum 1000MB root.
+Would you like me to try to partition a drive automatically
+or would you rather partition it manually with parted?  If
+you have already setup your partitions, you may skip this step
+
+Partition (Auto/Parted/Skip) [Auto]: [return] 
+
+I found the following drives on your system:
+ sda  2147MB
+
+
+Install the image on? [sda]: [return]
+
+This will destroy all data on /dev/sda.
+Continue? (Yes/No) [No]: Yes
+
+How big of a root partition should I create? (1000MB - 2147MB) [2147]MB: [return]
+
+Creating filesystem on /dev/sda1: OK
+Done!
+Mounting /dev/sda1...
+What would you like to name this image? [VyOS_999.hydrogen.11291501]: 
+OK.  This image will be named: VyOS_999.hydrogen.11291501
+Copying squashfs image...
+Copying kernel and initrd images...
+Done!
+I found the following configuration files:
+    /config/config.boot
+    /opt/vyatta/etc/config.boot.default
+Which one should I copy to sda? [/config/config.boot]: [return]
+
+Copying /config/config.boot to sda.
+Enter password for administrator account
+Enter password for user 'vyos': <removed>
+Retype password for user 'vyos': <removed>
+I need to install the GRUB boot loader.
+I found the following drives on your system:
+ sda  2147MB
+
+
+Which drive should GRUB modify the boot partition on? [sda]: [return]
+
+Setting up grub: OK
+Done!
+vyos@vyos:~$ 
+=== Basic Command ===
+
+Mode VyOS
+- usermode (default saat login)
+- configuration mode
+
+Masuk configuration mode
+$ configure
+
+User Mode
+$ ping
+$ show
+$ poweroff
+$ reboot
+
+Konfigurasi Mode
+# set ? digunakan untuk mensetting sebuah servis/interface
+# show ? digunakan untuk menampilkan konfigurasi
+# edit ? digunakan untuk mengubah konfigurasi yg ada
+# delete ? menghapus konfigurasi yang ada
+# commit ? meng-apply konfigurasi yang diseting
+# compare ? memeriksa perbedaan konfigurasi tersimpan dengan konfigurasi yang belum di commit
+# save ? menyimpan konfigurasi
+# exit ? keluar konfigurasi mode
+# exit-discard ? keluar tanpa meng-apply konfigurasi
+# run ping 
+
+Konfigurasi IP Address
+# set interface ethernet eth0 address 10.0.0.2x/24
+
+Konfigurasi SSH
+# set service ssh port 22
+
+Apply & Save Konfigurasi
+# commit
+# save
+
+Cancel Konfigurasi
+# exit discard
+
+=== IP Address ===
+
+--IPv4--
+Kelas A : 1.0.0.0 - 126.255.255.255
+Kelas B : 128.0.0.0 - 191.255.255.255
+Kelas C : 192.0.0.0 - 224.255.255.255
+
+IP Loopback : 127.0.0.0 - 127.255.255.255
+
+IP Public : Untuk interakasi publik di Internet
+IP Privat : untuk penggunaan privat di jaringan LAN/Lokal
+
+IP Privat
+Kelas A : 10.0.0.0 - 10.255.255.255
+Kelas B : 172.16.0.0 - 172.16.255.255
+Kelas C : 192.168.0.0 - 192.168.255.255
+
+--Subnetting--
+
+Subnetting digunakan untuk membagi/mengalokasikan IP sesuai kebutuhan.
+Ex:
+172.16.1.15/27 (IP Address/Subnet)
+Cara hitung:
+Bit IPv4-Jumlah bit subnet
+32-27=5
+
+Hasil pengurangan dijadikan sebagai pangkat dari 2
+2pangkat 5=32
+
+Subnet Mask
+Nilai 8bit IPv4 - Hasil pemangkatan
+256-32=224
+Jadi subnet = 255.255.255.224
+
+IP Network= 172.16.1.0
+IP Broadcast = 172.16.1.31
+IP Host = 172.16.1.1 - 172.16.1.30
+
+Ex:
+10.0.0.20/23 (IP Address/Subnet)
+Cara hitung:
+Bit IPv4-Jumlah bit subnet
+24-23=1
+
+Hasil pengurangan dijadikan sebagai pangkat dari 2
+2pangkat 1=2
+
+Subnet Mask
+Nilai 8bit IPv4 - Hasil pemangkatan
+256-32=254
+Jadi subnet = 255.255.254.0
+
+IP Network= 10.0.0.0
+IP Broadcast = 10.0.1.255
+IP Host = 10.0.0.1 - 10.0.1.255
+
+===LAN Interfaces===
+
+Ethernet = Interface Fisik
+Bonding = Interface Virtual, berfungsi menggabungkan 2 atau lebih interface untuk menghasilkan Bandwith yang lebih besar
+VLAN (Virtual LAN) = Interface Virtual untuk mensegmentasi LAN
+
+---Konfigurasi Ethernet---
+# set interfaces ethernet eth0 address 10.0.0.2x/24
+# commit
+# save
+# show interfaces
+
+---Konfigurasi VLAN---
+# set interfaces ethernet eth1 vif 10 address 10.10.10.1/24
+# commit
+# save
+# show interfaces
+
+---Konfigurasi Bonding---
+# set interfaces bonding bond0
+# set interfaces bonding bond0 address 192.168.10.1/24
+# set interfaces bonding bond0 mode 802.3d 
+# set interfaces ethernet eth0 bond-group bond0
+# set interfaces ethernet eth1 bond-group bond0 
+
+===Static Routing===
+R1
+# set system host-name R1
+# set interfaces ethernet eth0 address 10.0.0.2x/24
+# set interfaces ethernet eth1 address 10.10.10.1/24
+# commit
+# save
+
+R2
+# set system host-name R2
+# set interfaces ethernet eth0 address 10.10.10.2/24
+# set interfaces ethernet eth1 address 192.168.1.1/24
+# commit
+# save
+
+--Routing--
+R1 
+# set protocols static route 192.168.0.0/24 next-hop 10.10.10.2
+# commit
+# save
+
+R1
+# set protocolos static route 0.0.0.0/0 next-hop 10.0.0.1
+# set services dns forwarding name-server 8.8.8.8
+# set services dns forwarding name-server 8.8.4.4
+# set services dns forwarding listen-on eth0
+
+R2
+# set protocols static route 10.0.0.0/24 next-hop 10.10.10.1
+# commit
+# save
+
+===NAT (Network Address Translation)===
+
+---Source NAT---
+R1
+# set nat source rule 10 outbound-interface eth0
+# set nat source rule 10 source address 10.10.10.0/24
+# set nat source rule 10 translation address masquerade
+# commit
+# save
+
+R2
+# set protocolos static route 0.0.0.0/0 next-hop 10.10.10.1
+# set services dns forwarding name-server 8.8.8.8
+# set services dns forwarding name-server 8.8.4.4
+# set services dns forwarding listen-on eth0
+# commit
+# save
+# ping 8.8.8.8
+# ping google.com
+
+
+---Destination NAT---
+Ex. SSH ke R2
+
+Dari laptop
+ssh -l vyos 10.10.10.2
+Hasil : gagal
+
+R1
+# set nat destination rule 10 destinantion port 2222
+# set nat destination rule 10 inbound-interface eth0
+# set nat destination rule 10 protocol tcp ? (SSH menggunakan protocol tcp)
+# set nat destination rule 10 translation address 10.10.10.2
+# set nat destination rule 10 translation port 22
+
+Tes dari laptop ssh ke ip 10.0.0.2x port 2222
+ex. ssh -l vyos 10.0.0.2x -p2222
+Hasil : sukses masuk ke R2
+
+
+---NAT 1 to 1---
+1 IP Public untuk 1 IP Privat
+
+R1
+# set nat destination rule 5 destination address 10.0.0.2x
+# set nat destination rule 5 inbound-interface eth0
+# set nat destination rule 5 translation address 10.10.10.2
+
+# set nat source rule 5 source address 10.10.10.2
+# set nat source rule 5 outbound-interface eth0
+# set nat source rule 5 translation address 10.0.0.2x
+# commit
+# save
+
+Test
+dari laptop ssh -l vyos 10.0.0.2x hasilnya ke R2
+
+===Firewall===
+
+---Interface Based Firewall---
+R1
+# set firewall name INSIDE-LOCAL default-action drop
+# set firewall name INSIDE-LOCAL rule 10 action accept
+# set firewall name INSIDE-LOCAL rule 10 protocol icmp
+# set interface ethernet eth1 firewall local name INSIDE-LOCAL
+# commit
+# save
+
+R2
+test ping ke R1 = sukses
+SSH ke R1 = gagal
+
+R1
+# set firewall name INSIDE-LOCAL rule 20 action accept
+# set firewall name INSIDE-LOCAL rule 20 destination port ssh
+# set firewall name INSIDE-LOCAL rule 20 protocol tcp
+# commit
+# save
+
+R2
+test ping ke R1 = sukses
+SSH ke R1 = sukses
+
+R1
+# set firewall name OUTSIDE-INSIDE default-action drop
+# set firewall name OUTSIDE-INSIDE rule 10 action accept
+# set firewall name OUTSIDE-INSIDE rule 10 destination address 10.10.10.2
+# set firewall name OUTSIDE-INSIDE rule 10 destination port ssh
+# set firewall name OUTSIDE-INSIDE rule 10 protocol tcp
+# set interface ethernet eth0 firewall in name OUTSIDE-INSIDE
+# commit
+# save
+
+Host/Laptop
+test ping ke 10.0.0.3x/10.0.0.2x = gagal
+SSH ke 10.0.0.3x/10.0.0.2x = sukses ke R2
+
+R1
+# set firewall name OUTSIDE-LOCAL default-action drop
+# set firewall name OUTSIDE-LOCAL rule 10 action accept
+# set firewall name OUTSIDE-LOCAL rule 10 destination port ssh
+# set firewall name OUTSIDE-LOCAL rule 10 protocol tcp
+# set interface ethernet eth0 firewall local name OUTSIDE-LOCAL
+# commit
+# save
+
+Host/Laptop
+test ping ke 10.0.0.3x/10.0.0.2x = gagal
+SSH ke 10.0.0.3x/10.0.0.2x = sukses ke R1
+
+
+---Zone Based Firewall---
+
+Hapus Interface Firewall
+R1
+# del interface ethernet eth1 firewall local name INSIDE-LOCAL
+# del interface ethernet eth0 firewall in name OUTSIDE-INSIDE
+# del interface ethernet eth0 firewall local name OUTSIDE-LOCAL
+# commit
+# save
+
+
+Set Zone Policy
+R1
+# set zone-policy zone LOCAL description "VyOS Zone"
+# set zone-policy zone LOCAL local-zone
+# set zone-policy zone INSIDE description "LAN"
+# set zone-policy zone INSIDE interface eth1
+# set zone-policy zone OUTSIDE description "Public Zone"
+# set zone-policy zone OUTSIDE interface eth0
+# commit
+# save
+
+Set Firewall
+R1
+# set firewall name INSIDE-OUTSIDE default-action accept
+# set firewall name LOCAL-INSIDE default-action accept
+# set firewall name LOCAL-OUTSIDE default-action accept
+
+Konfigurasi Statefull Firewall
+# set firewall state-policy established action accept
+# set firewall state-policy invalid action drop
+# set firewall state-policy related action accept
+
+Konfigurasi Zone firewall
+# set zone-policy zone LOCAL from INSIDE firewall name INSIDE-LOCAL
+# set zone-policy zone LOCAL from OUTSIDE firewall name OUTSIDE-LOCAL
+# set zone-policy zone INSIDE from LOCAL firewall name LOCAL-INSIDE
+# set zone-policy zone INSIDE from OUTSIDE firewall name OUTSIDE-INSIDE
+# set zone-policy zone OUTSIDE from INSIDE firewall name INSIDE-OUTSIDE
+# set zone-policy zone OUTSIDE from LOCAL firewall name LOCAL-OUTSIDE
+# commit
+# save
+ 
+Test
+dari R2 ping ke internet = reply
+dari R1 ping internet, ping dan ssh ke R2 Reply
+dari Host ssh ke R1 sukses
+dari host ssh ke IP Publik 10.0.0.2x untuk R2 sukses
+
+===USER===
+
+Tambahkan user
+# set system login user admin level admin
+# set system login user admin authentication plaintext-password administrator
+# commit
+# save
+
+# set system login user operator level operator
+# set system login user operator authentication plaintext-password operator
+# commit
+# save
+
+Ganti Password default VYOS
+Login gunakan user level admin selain vyos
+# set system login user vyos authentication plaintext-password bebas
+# commit
+# save
+
+Ganti Banner
+# set system login banner pre-login "isi sesuka hati" --> untuk sebelum login
+# set system login banner post-login "isi sesuka hati" --> untuk sesudah login
+
+===DHCP Server===
+R1
+# set service dhcp-server shared-network-name VyOS subnet 10.10.10.0/24 start 10.10.10.101 stop 10.10.10.105
+# set service dhcp-server shared-network-name VyOS subnet 10.10.10.0/24 default-router 10.10.10.1
+# set service dhcp-server shared-network-name VyOS subnet 10.10.10.0/24 dns-server 8.8.8.8
+# set service dhcp-server shared-network-name VyOS subnet 10.10.10.0/24 lease 600
+# commit
+# save
+
+===DHCP Client===
+R2
+# del interfaces ethernet eth1 address 10.10.10.2/24 ? jika ada konfigurasi static dihapus dulu
+# set interfaces ethernet eth1 address dhcp
+# commit
+# save
+# show interfaces
+$ ip addr
+
+---Delete INIT: Id "TO" respawning too fast: disabled for 5 minutes---
+# delete system console
+
+---Backup Konfigurasi---
+$ copy file running://config/config.boot to scp://user:password@host/direktori 
+$ copy file running://config/config.boot to scp://moko:moko@10.0.0.122/home/moko
