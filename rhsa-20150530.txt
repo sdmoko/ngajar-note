@@ -1,0 +1,590 @@
+﻿=== Red Hat Fundamental ===
+Date: 30-31 Mei 2015
+
+
+===Instalasi RHEL 7===
+~ Minimal
+~ LVM2
+~ NTP
+
+===shell & manajemen file & directory===
+
+whoami → cek user aktiv
+pwd → print working directory ( melihat direktori kerja saat ini)
+cd → change directory (pindah directori)
+mkdir → make directory
+rmdir → remove empty directory
+ls → listing directory
+
+[command] --help
+man [command]
+
+touch → membuat file kosong
+rm → menghapus file/dir
+rm -rf → remove directori dengan isinya
+cp → copy file/dir
+mv → move/rename file/dir
+
+file → melihat tipe file
+
+===Konfigurasi Jaringan===
+
+1. Colok kabel UTP
+
+# dmesg | grep enp
+
+# nmtui
+
+IP: 10.0.0.2x/24
+Gateway: 10.0.0.1
+DNS1: 8.8.8.8
+DNS2: 8.8.4.4
+
+[X] Automatically connected
+
+# ip addr → Cek alamat IP
+# ip route → Cek default gateway
+# cat /etc/resolv.conf → Cek DNS resolver
+
+# ping 10.0.0.2x
+# ping 10.0.0.1
+
+
+===SSH Service===
+
+# systemctl status sshd
+
+Test SSH dari Hos OS laptop ke RHEL 7 Server
+
+---SSH Tanpa Password (Key Public)---
+
+---Generate Key Public di Host OS Laptop (Linux)---
+
+$ ssh-keygen
+$ ls -lh ~/.ssh/
+
+---Copy Key Public ke server SSH di Host OS Laptop (Linux)---
+
+$ ssh-copy-id -i ~/.ssh/id_rsa.pub root@10.0.0.2x
+
+Test SSH dari Hos OS laptop ke RHEL 7 Server
+
+---Transfer File lewat SCP---
+
+SCP dari Host OS ke Server
+
+scp -r /etc/passwd root@10.0.0.2x:/root/
+
+SSH ke Server
+
+# ls -lh /root
+
+SCP dari Server ke Host OS
+
+scp -r root@10.0.0.2x:/etc/redhat-release ~/
+
+
+===editor teks vi===
+
+cat → menampilkan isi file teks
+
+command vi
+i → masuk ke mode edit
+esc → kembali ke mode command
+:w [namafile] → simpan file
+:q! → keluar
+:wq → simpan dan keluar
+yy → copy 1 baris di posisi kursor
+3yy → copy 3 baris mulai dari posisi kursor ke bawah
+dd → delete/cut 1 baris di posisi kursor
+3dd → delete/cut 3 baris mulai dari posisi kursor ke bawah
+u → undo
+:redo → redo
+/[string] → mencari kata string
+n → mencari kata string berikutnya
+:%s/string_awal/string_pengganti/g
+
+
+===Konfigurasi Repo===
+
+1. Buat direktori mount point DVD
+
+# mkdir /media/rhel7-dvd
+
+2. Mount DVD RHEL
+
+# mount /dev/sr0 /media/rhel7-dvd
+# df -h
+
+3. Buat file konfigurasi repo
+
+# cd /etc/yum.repos.d/
+
+# ls /etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release >> rhel7-dvd.repo
+
+# vi rhel7-dvd.repo
+
+[rhel7-dvd]
+name=Red Hat Enterprise Linux 7 DVD
+baseurl=file:///media/rhel7-dvd
+enabled=1
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+
+# yum repolist
+
+===Test service network (httpd)===
+
+# yum install httpd
+# systemctl start httpd
+# systemctl enable httpd
+# systemctl status httpd
+
+# firewall-cmd --permanent --add-service http
+# firewall-cmd --reload
+# firewall-cmd --list-services
+
+===Manajemen User===
+
+Tipe User:
+1. root → administrator
+2. pseudo users → user aplikasi
+3. users → user biasa
+
+File konfigurasi user: /etc/passwd
+
+root:x:0:0:root:/root:/bin/bash
+
+[user]:[password]:[uid]:[gid]:[deskripsi]:[home dir]:[shell]
+
+File konfigurasi password: /etc/shadow
+
+---Membuat User---
+
+# useradd -m budi
+
+---Set Password User---
+
+# passwd budi
+
+File konfigurasi grup: /etc/group
+
+---Login Ke User Lain di Shell Aktif---
+
+su - [user]
+
+---Login Ke root di Shell Aktif---
+
+su -
+
+---Membuat Grup Baru---
+
+# grupadd -g 9999 jagoan
+
+---Memasukkan user ke dalam grup---
+
+# usermod -aG jagoan budi
+# tail -5 /etc/passwd
+# tail -5 /etc/group
+
+===Hak Akses (Permission) dan Kepemilikan (Ownership) File/Dir===
+
+1. Buat direktori dan Berkas untuk latihan
+
+# mkdir /latihan
+# cd /latihan
+# touch new.txt
+# echo “Hello” > new.txt
+
+2. Cek Hak Akses dan kepemilikan
+
+# ls -lh /latihan
+-rw-r--r--. 1 root root 6 May 30 14:32 new.txt
+
+- → file/direktori ( - = file, d=direktori, l=link)
+rw- → permission user owner
+r-- → permission group owner
+r-- → permission other
+. → SElinux
+1 → jumlah hardlink
+root → user owner
+root → group owner
+6 → ukuran file
+May 30 14:32 → waktu modifikasi terakhir
+new.txt → nama file
+
+---permission---
+
+	read 4		write 2		xcute 1
+0	-		-		-		
+1	-		-		x		
+2	-		w		-		
+3	-		w		x		
+4	r		-		-
+5	r		-		x
+6	r		w		-
+7	r		w		x
+
+Permission
+OwnerGrupOther
+
+chmod → ubah permission file/dir
+chown → ubah ownership file/dir
+chgrp → ubah ownership grup file/dir
+
+# chmod [nilai permission] [file/dir]
+# chmod [ugoa][+-=][rwx-] [file/dir]
+# chmod 755 new.txt
+
+====Set SELinux Permissive===
+# getenforce → cek status SELinux
+# setenforce [0|1] → set SELinux Permissive | Enforcing
+
+===Konfigurasi Jam dan Tanggal===
+
+date → system clock (jam tanggal sistem Linux)
+hwclock → hardware clock (jam tanggal sistem BIOS)
+
+1. instal paket ntp
+
+# yum install ntp ntpdate
+# systemctl start ntpd
+# systemctl enable ntpd
+# systemctl status ntpd
+
+2. set time-zome
+
+# timedatectl list-timezones | grep -i jakarta
+# timedatectl set-timezone Asia/Jakarta
+
+3. set system time menggunakan ntp
+
+# timedatectl set-ntp yes
+
+4. verifikasi
+
+# timedatectl
+# date
+
+5. sinkronisasi system clock dan hardware clock
+
+# hwclock –systohc
+
+
+
+===Logical Volume Management (LVM)===
+
+---Cek Harddisk yang terdeteksi---
+# fdisk -l
+
+1. Set partisi tipe 15 (Linux LVM) dengan fdisk
+
+# fdisk /dev/sdb → buat partisi
+p → menampilkan skema partisi
+g → membuat partition table gpt
+n → membuat partisi baru
+w → menyimpan skema partisi
+q → keluar tanpa menyimpan
+# partprobe → untuk mengenali partisi oleh kernel
+
+2. Membuat Physical Volume (PV)
+
+# pvcreate /dev/sdb1 /dev/sdb2
+# pvs
+# pvdisplay
+
+3. Membuat Volume Group (VG)
+
+# vgcreate vg01 /dev/sdb2 /dev/sdb3
+# vgs
+# vgdisplay
+
+4. Membuat Logical Volume (LV)
+
+# lvcreate vg01 -L 3G -n lv01
+# lvs
+# lvdisplay
+# vgs
+
+5. Format LV
+
+# mkfs.xfs /dev/vg01/lv01 -L VG01LV01
+
+6. Mount LV
+
+# mkdir /mnt/vg01lv01
+
+# vi /etc/fstab
+
+/dev/vg01/lv01 /mnt/vg01lv01 xfs defaults 0 0
+
+# mount /dev/vg01/lv01
+# mount
+# df -h
+
+
+===Extend LVM===
+
+0. Menulis file ke partisi LV
+
+# unalias cp
+# for X in {1..1000000};do cp -v /etc/passwd /mnt/vg01lv01/file$X; sleep 5; done
+
+Buka terminal baru
+
+1. Membuat PV partisi baru
+# pvcreate /dev/sdb3
+# pvs
+
+2. Masukkan PV baru ke VG yang sudah ada
+
+# vgextend vg01 /dev/sdb3
+# vgs
+
+3. Extend LV01
+
+# lvextend -l +50%FREE /dev/baru/lv01
+# lvs
+# df -h
+
+4. Resize filesystem (ext4 → resize2fs | xfs → xfs_growfs)
+
+# xfs_growfs /mnt/databaru/
+# df -h
+
+===Shell Script===
+
+# cd /latihan
+# vi latihan3.sh
+
+--------------------------------------
+
+#!/bin/bash
+echo “halo, ini skrip pertama saya”
+
+---------------------------------------
+
+# cat latihan3.sh
+# chmod +x latihan3.sh
+# ./latihan3.sh
+
+# vi latihan4.sh
+
+---------------------------------------------
+
+#!/bin/bash
+
+unalias cp
+for X in {1..1000000}
+	do
+		cp -v /etc/passwd /mnt/vg01lv01/file$X
+		sleep 5
+	done
+
+-------------------------------------------------
+
+# chmod +x latihan4.sh
+# ./latihan4.sh
+
+
+===Proses Boot===
+1. BIOS
+2. Boot loader → GRUB (RedHat/Debian/dll) / LiLo (SlackWare/dll.)
+3. Kernel → /boot/vmlinuz-xxxx
+4. SystemD → PID 1
+5. Services
+
+===Manajemen Proses===
+
+Menampilkan keseluruhan proses
+
+# ps -aux | more
+# ps -aux | head -1
+# ps -aux | grep latihan4.sh
+
+Tipe proses:
+1. Proses Daemons (SystemD)
+Proses yang dijalankan oleh SystemD/Services
+
+2. Proses Foreground
+Proses yang diinput dan berjalan di shell aktif
+
+3. Proses Background
+Proses yang diinput di shell aktif tapi berjalan di belakang shell.
+
+---Menampilkan Proses Statis---
+
+# ps -aux | more
+
+---Mengirim Sinyal Ke Proses (Kill)---
+
+# ps -aux | grep latihan4.sh
+# kill -9 [PID]
+
+---Menampilkan Proses Dinamis---
+
+# top
+
+===Repo CentOS Updates===
+
+Contoh Repo CentOS Updates:
+http://kambing.ui.ac.id/centos/7/updates/x86_64/
+
+# cd /etc/yum.repos.d
+
+# vi centos7-updates.repo
+
+[centos7-updates]
+name=CentOS 7 Updates
+baseurl=http://kambing.ui.ac.id/centos/7/updates/x86_64/
+enabled=1
+gpgcheck=0
+
+# yum repolist
+
+---Upgrade Paket---
+
+# yum upgrade
+
+===Repo EPEL===
+
+Contoh Repo EPEL:
+http://fedora.dionipe.web.id/epel/7/x86_64/
+
+#cd /etc/yum.repos.d
+# vi epel7.repo
+
+[epel]
+name=EPEL 7
+baseurl=http://fedora.dionipe.web.id/epel/7/x86_64/
+enabled=1
+gpgcheck=0
+
+wget http://dl.fedoraproject.org/pub/epel/7/x86_64/e/epel-release-7-5.noarch.rpm
+rpm -ivh epel-release-7-5.noarch.rpm
+
+
+# yum repolist
+# yum install htop testdisk
+
+# yum install yumex
+
+
+===Partisi Swap===
+
+# swapon -s
+# top
+# free -m → status memori ram & swap
+
+---Membuat & Aktifkan Partisi Swap---
+
+1. Partisi tipe Linux Swap (14)
+
+# fdisk /dev/sdb
+# partprobe
+# fdisk -l
+
+2. Format tipe FS Swap
+
+# mkswap -L SWAP /dev/sdb4
+
+3. Aktifkan partisi Swap
+
+# swapon /dev/sdb4
+# swapon -s
+
+4. Edit file konfigurasi mount
+
+# vi /etc/fstab
+
+/dev/sdb4 swap swap defaults 0 0
+
+5. Matikan Swap
+
+# swapoff /dev/sdb4
+# swapon -s
+
+
+===FTP Service===
+1. Install paket vsftpd
+
+# yum install vsftpd
+
+2. Aktifkan service ftp
+# systemctl start vsftpd
+# systemctl enable vsftpd
+# systemctl status vsftpd
+
+# firewall-cmd --permanent --add-service ftp
+# firewall-cmd --reload
+# firewall-cmd --list-services
+
+3. Test login FTP dari Klien
+ftp 10.0.0.2x
+User : anonymous
+Password : [enter]
+
+4. Edit file konfigurasi vsftpd : /etc/vsftpd/vsftpd.conf
+
+Tujuan edit:
+- Disable anonymous
+- Set chroot local user
+# vi /etc/vsftpd/vsftpd.conf
+------------------------------------
+
+anonymous_enable=NO
+chroot_local_user=YES
+chroot_list_enable=YES
+chroot_list_file=/etc/vsftpd/chroot_list
+allow_writeable_chroot=YES
+
+------------------------------------
+
+--buat berkas kosong /etc/vsftpd/chroot_list
+# touch /etc/vsftpd/chroot_list
+
+# systemctl restart vsftpd
+
+5. Konfigurasi SELinux
+# setsebool -P ftp_home_dir=1
+# getsebool -a | grep ^ftp_home_dir
+
+
+===Resetting Root Password===
+1. Boot system, tunggu sampai muncul menu GRUB2 muncul
+
+2. Di bootloader menu tekan “e”
+
+3. Cari baris yang dimulai dengan “linux” hapus perintah “rhgb” dan tambahkan diujung baris init=/bin/sh
+
+4. tekan ctrl +x untuk boot  
+
+5. Load policy SELinux
+
+# /usr/sbin/load_policy -i
+
+6. Execute remount root partition
+
+# mount -o remount,rw /
+
+7. Reset root password
+
+# passwd root
+
+8. Remount root partisi lagi
+
+# mount -o remount,ro /
+
+9. Reboot system
+
+# exec /sbin/init
+
+login dengan password root baru
+
+# reboot
+
+
+Syah Dwi Prihatmoko
+HP/WA/Telegram = 08999 0302 65
+syahdwi92@gmail.com
+
